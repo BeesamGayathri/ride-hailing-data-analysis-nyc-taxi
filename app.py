@@ -13,13 +13,7 @@ st.markdown("### 📊 Explore trip behavior, pricing, and demand trends")
 # -------------------- LOAD DATA --------------------
 @st.cache_data
 def load_data():
-    url = "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2020-06.csv"
-    
-    df = pd.read_csv(url)
-    
-    # Sample 45k rows
-    df = df.sample(n=45000, random_state=42)
-    
+    df = pd.read_csv("data/sample_taxi_data.csv")
     return df
 
 df = load_data()
@@ -48,14 +42,22 @@ df['tpep_dropoff_datetime'] = pd.to_datetime(df['tpep_dropoff_datetime'])
 df['pickup_hour'] = df['tpep_pickup_datetime'].dt.hour
 df['day_of_week'] = df['tpep_pickup_datetime'].dt.day_name()
 
-df['trip_duration'] = (df['tpep_dropoff_datetime'] - df['tpep_pickup_datetime']).dt.total_seconds() / 60
+df['trip_duration'] = (
+    df['tpep_dropoff_datetime'] - df['tpep_pickup_datetime']
+).dt.total_seconds() / 60
 
 df = df[(df['trip_duration'] > 0) & (df['trip_duration'] < 300)]
+
+# -------------------- FEATURE ENGINEERING --------------------
+df['fare_per_km'] = df['fare_amount'] / df['trip_distance']
+df['tip_percentage'] = (df['tip_amount'] / df['fare_amount']) * 100
+df['trip_speed'] = df['trip_distance'] / (df['trip_duration'] / 60)
 
 # -------------------- SIDEBAR FILTERS --------------------
 st.sidebar.header("🔍 Filters")
 
 hour = st.sidebar.slider("Select Pickup Hour", 0, 23, (0, 23))
+
 day = st.sidebar.multiselect(
     "Select Day",
     options=df['day_of_week'].unique(),
@@ -105,7 +107,8 @@ st.pyplot(fig4)
 
 # Correlation Heatmap
 st.subheader("🔥 Correlation Heatmap")
-corr = filtered_df[['fare_amount','trip_distance','trip_duration','tip_amount']].corr()
+corr = filtered_df[['fare_amount', 'trip_distance', 'trip_duration', 'tip_amount']].corr()
+
 fig5, ax5 = plt.subplots()
 sns.heatmap(corr, annot=True, cmap='coolwarm', ax=ax5)
 st.pyplot(fig5)
