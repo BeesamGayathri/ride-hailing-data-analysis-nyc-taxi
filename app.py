@@ -13,7 +13,7 @@ st.markdown("### 📊 Explore trip behavior, pricing, and demand trends")
 # -------------------- LOAD DATA --------------------
 @st.cache_data
 def load_data():
-    df = pd.read_csv("data/sample_taxi_data.csv")
+    df = pd.read_parquet("/yellow_tripdata_2020-06.parquet")
     return df
 
 df = load_data()
@@ -81,31 +81,26 @@ col3.metric("Avg Distance (km)", round(filtered_df['trip_distance'].mean(), 2))
 
 # -------------------- VISUALIZATIONS --------------------
 
-# Trips by Hour
 st.subheader("⏱️ Trips by Hour")
 fig1, ax1 = plt.subplots()
 sns.countplot(x='pickup_hour', data=filtered_df, ax=ax1)
 st.pyplot(fig1)
 
-# Fare vs Distance
 st.subheader("💰 Fare vs Distance")
 fig2, ax2 = plt.subplots()
 sns.scatterplot(x='trip_distance', y='fare_amount', data=filtered_df, ax=ax2)
 st.pyplot(fig2)
 
-# Tip Analysis
 st.subheader("💸 Tip vs Fare")
 fig3, ax3 = plt.subplots()
 sns.scatterplot(x='fare_amount', y='tip_amount', data=filtered_df, ax=ax3)
 st.pyplot(fig3)
 
-# Duration vs Distance
 st.subheader("⏱️ Duration vs Distance")
 fig4, ax4 = plt.subplots()
 sns.scatterplot(x='trip_distance', y='trip_duration', data=filtered_df, ax=ax4)
 st.pyplot(fig4)
 
-# Correlation Heatmap
 st.subheader("🔥 Correlation Heatmap")
 corr = filtered_df[['fare_amount', 'trip_distance', 'trip_duration', 'tip_amount']].corr()
 
