@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import os
 
 # -------------------- PAGE CONFIG --------------------
 st.set_page_config(page_title="NYC Taxi Analysis", layout="wide")
@@ -13,10 +14,20 @@ st.markdown("### 📊 Explore trip behavior, pricing, and demand trends")
 # -------------------- LOAD DATA --------------------
 @st.cache_data
 def load_data():
-    df = pd.read_parquet("/yellow_tripdata_2020-06.parquet")
+    file_path = "data/yellow_tripdata_2020-06.parquet"
+    
+    if not os.path.exists(file_path):
+        st.error(f"❌ Dataset not found at: {file_path}")
+        return pd.DataFrame()
+
+    df = pd.read_parquet(file_path)
     return df
 
 df = load_data()
+
+# Stop if data not loaded
+if df.empty:
+    st.stop()
 
 # -------------------- DATA CLEANING --------------------
 df.columns = df.columns.str.strip()
