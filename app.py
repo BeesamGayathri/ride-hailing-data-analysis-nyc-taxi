@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
+from sklearn.linear_model import LinearRegression
 
 # -------------------- PAGE CONFIG --------------------
 st.set_page_config(page_title="NYC Taxi Analysis", layout="wide")
@@ -13,10 +14,23 @@ st.set_page_config(page_title="NYC Taxi Analysis", layout="wide")
 st.title("🚖 Ride-Hailing Data Analysis: NYC Taxi Insights")
 st.markdown("### 📊 Explore trip behavior, pricing, and demand trends")
 
+# -------------------- CUSTOM UI --------------------
+st.markdown("""
+<style>
+.metric-card {
+    background-color: #111;
+    padding: 15px;
+    border-radius: 10px;
+    text-align: center;
+    color: white;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # -------------------- LOAD DATA --------------------
 @st.cache_data
 def load_data():
-    csv_path = "yellow_tripdata_2020-06.csv"  # ✅ FIXED PATH
+    csv_path = "yellow_tripdata_2020-06.csv"
 
     if not os.path.exists(csv_path):
         st.error("❌ CSV file not found in root folder")
@@ -87,49 +101,83 @@ filtered_df = df[
     (df['day_of_week'].isin(day))
 ]
 
-# -------------------- KPI METRICS --------------------
-st.subheader("📊 Key Performance Indicators")
+# -------------------- KPI CARDS --------------------
+st.subheader("📊 Key Insights")
 
 col1, col2, col3 = st.columns(3)
 
-col1.metric("🚖 Total Trips", len(filtered_df))
-col2.metric("💰 Avg Fare ($)", round(filtered_df['fare_amount'].mean(), 2))
-col3.metric("📏 Avg Distance (km)", round(filtered_df['trip_distance'].mean(), 2))
+col1.markdown(f"""
+<div class="metric-card">
+<h3>🚖 Total Trips</h3>
+<h2>{len(filtered_df)}</h2>
+</div>
+""", unsafe_allow_html=True)
 
-# -------------------- VISUALIZATIONS --------------------
+col2.markdown(f"""
+<div class="metric-card">
+<h3>💰 Avg Fare</h3>
+<h2>${round(filtered_df['fare_amount'].mean(),2)}</h2>
+</div>
+""", unsafe_allow_html=True)
 
+col3.markdown(f"""
+<div class="metric-card">
+<h3>📏 Avg Distance</h3>
+<h2>{round(filtered_df['trip_distance'].mean(),2)} km</h2>
+</div>
+""", unsafe_allow_html=True)
+
+# -------------------- CHARTS --------------------
 st.subheader("⏱️ Trips by Hour")
-fig1, ax1 = plt.subplots()
-sns.countplot(x='pickup_hour', data=filtered_df, ax=ax1)
-st.pyplot(fig1)
+st.bar_chart(filtered_df['pickup_hour'].value_counts().sort_index())
 
 st.subheader("💰 Fare vs Distance")
-fig2, ax2 = plt.subplots()
-sns.scatterplot(x='trip_distance', y='fare_amount', data=filtered_df, ax=ax2)
-st.pyplot(fig2)
+fig1, ax1 = plt.subplots()
+sns.scatterplot(x='trip_distance', y='fare_amount', data=filtered_df, ax=ax1)
+st.pyplot(fig1)
 
-st.subheader("💸 Tip vs Fare")
-fig3, ax3 = plt.subplots()
-sns.scatterplot(x='fare_amount', y='tip_amount', data=filtered_df, ax=ax3)
-st.pyplot(fig3)
+# -------------------- MAP --------------------
+st.subheader("🗺️ Pickup Locations (Demo Map)")
 
-st.subheader("⏱️ Duration vs Distance")
-fig4, ax4 = plt.subplots()
-sns.scatterplot(x='trip_distance', y='trip_duration', data=filtered_df, ax=ax4)
-st.pyplot(fig4)
+sample_map = filtered_df.copy().head(1000)
+sample_map['lat'] = np.random.uniform(40.6, 40.9, size=len(sample_map))
+sample_map['lon'] = np.random.uniform(-74.05, -73.7, size=len(sample_map))
 
-st.subheader("🔥 Correlation Heatmap")
-corr = filtered_df[['fare_amount', 'trip_distance', 'trip_duration', 'tip_amount']].corr()
+st.map(sample_map[['lat', 'lon']])
 
-fig5, ax5 = plt.subplots()
-sns.heatmap(corr, annot=True, cmap='coolwarm', ax=ax5)
-st.pyplot(fig5)
+# -------------------- ML MODEL --------------------
+st.subheader("🤖 Fare Prediction Model")
+
+model_df = filtered_df[['trip_distance', 'trip_duration', 'fare_amount']].dropna()
+
+X = model_df[['trip_distance', 'trip_duration']]
+y = model_df['fare_amount']
+
+model = LinearRegression()
+model.fit(X, y)
+
+dist = st.slider("Trip Distance (km)", 1.0, 20.0, 5.0)
+dur = st.slider("Trip Duration (min)", 5.0, 60.0, 20.0)
+
+prediction = model.predict([[dist, dur]])
+
+st.success(f"💰 Predicted Fare: ${round(prediction[0],2)}")
+
+# -------------------- TIME SERIES --------------------
+st.subheader("📈 Trips Over Time")
+
+time_df = filtered_df.copy()
+time_df['date'] = time_df['tpep_pickup_datetime'].dt.date
+
+trend = time_df.groupby('date').size()
+
+st.line_chart(trend)
 
 # -------------------- DATA VIEW --------------------
 st.subheader("📄 Sample Data")
 st.dataframe(filtered_df.head(100))
 
-# -------------------- DOWNLOAD OPTION --------------------
+# -------------------- DOWNLOAD --------------------
 st.subheader("⬇️ Export Data")
 
 csv = filtered_df.to_csv(index=False).encode('utf-8')
