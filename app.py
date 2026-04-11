@@ -1,5 +1,6 @@
 import streamlit as st
 st.cache_data.clear()
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -15,18 +16,26 @@ st.markdown("### 📊 Explore trip behavior, pricing, and demand trends")
 # -------------------- LOAD DATA --------------------
 @st.cache_data
 def load_data():
-    file_path = "data/yellow_tripdata_2020-06.parquet"
-    
-    if not os.path.exists(file_path):
-        st.error(f"❌ Dataset not found at: {file_path}")
-        return pd.DataFrame()
+    parquet_path = "data/yellow_tripdata_2020-06.parquet"
+    csv_path = "data/yellow_tripdata_2020-06.csv"
 
-    df = pd.read_parquet(file_path)
-    return df
+    # Prefer CSV if available (faster)
+    if os.path.exists(csv_path):
+        df = pd.read_csv(csv_path)
+        st.success("⚡ Loaded dataset from CSV")
+        return df
+
+    # Fallback to Parquet
+    if os.path.exists(parquet_path):
+        df = pd.read_parquet(parquet_path)
+        st.success("🚖 Loaded dataset from Parquet")
+        return df
+
+    st.error("❌ Dataset not found (CSV or Parquet missing)")
+    return pd.DataFrame()
 
 df = load_data()
 
-# Stop if data not loaded
 if df.empty:
     st.stop()
 
@@ -68,10 +77,10 @@ df['trip_speed'] = df['trip_distance'] / (df['trip_duration'] / 60)
 # -------------------- SIDEBAR FILTERS --------------------
 st.sidebar.header("🔍 Filters")
 
-hour = st.sidebar.slider("Select Pickup Hour", 0, 23, (0, 23))
+hour = st.sidebar.slider("Pickup Hour Range", 0, 23, (0, 23))
 
 day = st.sidebar.multiselect(
-    "Select Day",
+    "Select Day of Week",
     options=df['day_of_week'].unique(),
     default=df['day_of_week'].unique()
 )
@@ -83,13 +92,13 @@ filtered_df = df[
 ]
 
 # -------------------- KPI METRICS --------------------
-st.subheader("📊 Key Metrics")
+st.subheader("📊 Key Performance Indicators")
 
 col1, col2, col3 = st.columns(3)
 
-col1.metric("Total Trips", len(filtered_df))
-col2.metric("Avg Fare ($)", round(filtered_df['fare_amount'].mean(), 2))
-col3.metric("Avg Distance (km)", round(filtered_df['trip_distance'].mean(), 2))
+col1.metric("🚖 Total Trips", len(filtered_df))
+col2.metric("💰 Avg Fare ($)", round(filtered_df['fare_amount'].mean(), 2))
+col3.metric("📏 Avg Distance (km)", round(filtered_df['trip_distance'].mean(), 2))
 
 # -------------------- VISUALIZATIONS --------------------
 
@@ -123,3 +132,15 @@ st.pyplot(fig5)
 # -------------------- DATA VIEW --------------------
 st.subheader("📄 Sample Data")
 st.dataframe(filtered_df.head(100))
+
+# -------------------- DOWNLOAD OPTION --------------------
+st.subheader("⬇️ Export Data")
+
+csv = filtered_df.to_csv(index=False).encode('utf-8')
+
+st.download_button(
+    label="Download Filtered Data as CSV",
+    data=csv,
+    file_name="nyc_taxi_filtered.csv",
+    mime="text/csv"
+)
