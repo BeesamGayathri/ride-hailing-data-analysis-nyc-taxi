@@ -11,17 +11,29 @@ st.set_page_config(page_title="NYC Taxi Analysis", layout="wide")
 st.title("🚖 Ride-Hailing Data Analysis: NYC Taxi Insights")
 st.markdown("### 📊 Explore trip behavior, pricing, and demand trends")
 
-# -------------------- LOAD DATA (CSV ONLY - SAFE) --------------------
+# -------------------- LOAD DATA (FINAL FIX) --------------------
 @st.cache_data
 def load_data():
-    csv_path = "data/yellow_tripdata_2020-06.csv"
+    possible_paths = [
+        "data/yellow_tripdata_2020-06.csv",
+        "./data/yellow_tripdata_2020-06.csv",
+        "yellow_tripdata_2020-06.csv"
+    ]
 
-    if os.path.exists(csv_path):
-        df = pd.read_csv(csv_path, low_memory=False)
-        st.success("⚡ Loaded dataset from CSV (stable mode)")
-        return df
+    for path in possible_paths:
+        if os.path.exists(path):
+            st.success(f"✅ Loaded dataset from: {path}")
+            return pd.read_csv(path, low_memory=False)
 
-    st.error("❌ CSV file not found. Please add dataset to /data folder.")
+    # Debug info
+    st.error("❌ CSV file not found")
+    st.write("📂 Current directory:", os.getcwd())
+
+    if os.path.exists("data"):
+        st.write("📁 Files inside data folder:", os.listdir("data"))
+    else:
+        st.write("❌ 'data' folder not found")
+
     return pd.DataFrame()
 
 df = load_data()
