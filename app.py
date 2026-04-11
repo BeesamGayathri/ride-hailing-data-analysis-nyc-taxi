@@ -11,7 +11,7 @@ st.set_page_config(page_title="NYC Taxi Analysis", layout="wide")
 st.title("🚖 Ride-Hailing Data Analysis: NYC Taxi Insights")
 st.markdown("### 📊 Explore trip behavior, pricing, and demand trends")
 
-# -------------------- LOAD DATA (FINAL SAFE VERSION) --------------------
+# -------------------- LOAD DATA (FINAL FIX) --------------------
 @st.cache_data
 def load_data():
     possible_paths = [
@@ -22,29 +22,19 @@ def load_data():
 
     for path in possible_paths:
         if os.path.exists(path):
-            try:
-                df = pd.read_csv(path, low_memory=False)
+            st.success(f"✅ Loaded dataset from: {path}")
+            return pd.read_csv(path, low_memory=False)
 
-                # Handle empty or corrupted file
-                if df.empty:
-                    st.error("❌ CSV file is empty or corrupted")
-                    return pd.DataFrame()
-
-                # 🔥 PERFORMANCE: sample if too large
-                if len(df) > 100000:
-                    df = df.sample(100000, random_state=42)
-
-                st.success(f"✅ Loaded dataset from: {path}")
-                return df
-
-            except Exception as e:
-                st.error("❌ Error reading CSV file")
-                st.exception(e)
-                return pd.DataFrame()
-
+    # Debug info
     st.error("❌ CSV file not found")
-    return pd.DataFrame()
+    st.write("📂 Current directory:", os.getcwd())
 
+    if os.path.exists("data"):
+        st.write("📁 Files inside data folder:", os.listdir("data"))
+    else:
+        st.write("❌ 'data' folder not found")
+
+    return pd.DataFrame()
 
 df = load_data()
 
