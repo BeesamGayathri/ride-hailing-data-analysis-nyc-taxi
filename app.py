@@ -11,30 +11,17 @@ st.set_page_config(page_title="NYC Taxi Analysis", layout="wide")
 st.title("🚖 Ride-Hailing Data Analysis: NYC Taxi Insights")
 st.markdown("### 📊 Explore trip behavior, pricing, and demand trends")
 
-# -------------------- SAFE DATA LOADING --------------------
+# -------------------- LOAD DATA (CSV ONLY - SAFE) --------------------
 @st.cache_data
 def load_data():
     csv_path = "data/yellow_tripdata_2020-06.csv"
-    parquet_path = "data/yellow_tripdata_2020-06.parquet"
 
-    # ✅ PRIORITY: CSV (MOST STABLE for Streamlit Cloud)
     if os.path.exists(csv_path):
-        df = pd.read_csv(csv_path)
-        st.success("⚡ Loaded dataset from CSV (recommended mode)")
+        df = pd.read_csv(csv_path, low_memory=False)
+        st.success("⚡ Loaded dataset from CSV (stable mode)")
         return df
 
-    # ⚠️ FALLBACK: Parquet (local use only)
-    if os.path.exists(parquet_path):
-        try:
-            df = pd.read_parquet(parquet_path, engine="fastparquet")
-            st.success("🚖 Loaded dataset from Parquet")
-            return df
-        except Exception as e:
-            st.error("Parquet loading failed. Use CSV instead.")
-            st.exception(e)
-            return pd.DataFrame()
-
-    st.error("❌ No dataset found (CSV or Parquet missing)")
+    st.error("❌ CSV file not found. Please add dataset to /data folder.")
     return pd.DataFrame()
 
 df = load_data()
@@ -45,7 +32,7 @@ if df.empty:
 # -------------------- CLEAN COLUMN NAMES --------------------
 df.columns = df.columns.str.strip()
 
-# -------------------- SAFE COLUMN CHECK --------------------
+# -------------------- REQUIRED COLUMNS CHECK --------------------
 required_cols = [
     "passenger_count",
     "trip_distance",
@@ -56,10 +43,10 @@ required_cols = [
     "tpep_dropoff_datetime"
 ]
 
-missing = [col for col in required_cols if col not in df.columns]
+missing_cols = [col for col in required_cols if col not in df.columns]
 
-if missing:
-    st.error(f"❌ Missing columns in dataset: {missing}")
+if missing_cols:
+    st.error(f"❌ Missing columns: {missing_cols}")
     st.stop()
 
 # -------------------- DATA CLEANING --------------------
