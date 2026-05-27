@@ -34,8 +34,7 @@ I have built this project using real-world data and created an interactive dashb
 ---
 
 ## 🌐 Live Demo
-🔗 https://ride-hailing-data-analysis-nyc-taxi-fp6abdftz3igvy5dqmwpiy.streamlit.app/
-
+🔗https://ride-hailing-data-analysis-nyc-taxi.streamlit.app/
 ---
 
 ## 🎥 Project Walkthrough
